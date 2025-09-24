@@ -4,8 +4,8 @@ from django.conf import settings
 
 class CustomUser(AbstractUser, PermissionsMixin):
     username = models.CharField(max_length=100, unique=True)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
+    first_name = models.CharField(max_length=150, blank=True) 
+    last_name = models.CharField(max_length=150, blank=True) 
 
     email = models.EmailField(max_length=255, unique=True, blank=False, null=False)
 

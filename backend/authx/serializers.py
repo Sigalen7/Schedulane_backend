@@ -120,36 +120,49 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ("bio", "photo", "birthdate", "user", "photo")
+        fields = ("bio", "photo", "birthdate", "user")
         read_only_fields = ("user",)
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
-    bio = serializers.CharField(required=False)
-    photo = serializers.ImageField(required=False, allow_null=True)
-    birthdate = serializers.DateField(required=False)
-    first_name = serializers.CharField(source="user.first_name", required=False)
-    last_name = serializers.CharField(source="user.last_name", required=False)
+    bio = serializers.CharField(required=False, allow_blank=True)
+    photo = serializers.ImageField(required=False, allow_null=True, use_url=True)
+    birthdate = serializers.DateField(required=False, allow_null=True)
+
+    first_name = serializers.CharField(
+        source="user.first_name", required=False, allow_blank=True
+    )
+    last_name = serializers.CharField(
+        source="user.last_name", required=False, allow_blank=True
+    )
+
+    # flag only in serializer to request deletion of existing photo
+    remove_photo = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = Profile
-        fields = ("bio", "photo", "birthdate", "first_name", "last_name")
+        fields = ("bio", "photo", "birthdate", "first_name", "last_name", "remove_photo")
 
     def update(self, instance, validated_data):
+        # nested user fields
         user_data = validated_data.pop("user", {})
-        profile_data = {
-            k: v
-            for k, v in validated_data.items()
-            if k in ("bio", "photo", "birthdate", )
-        }
 
-        for attr, value in profile_data.items():
-            setattr(instance, attr, value)
+        # delete photo first if requested
+        if validated_data.get("remove_photo"):
+            instance.photo.delete(save=False)
+            instance.photo = None
+
+        # apply profile fields when present (bio/photo/birthdate)
+        for k in ("bio", "photo", "birthdate"):
+            if k in validated_data:
+                setattr(instance, k, validated_data[k])
         instance.save()
 
-        user = instance.user
-        for attr, value in user_data.items():
-            setattr(user, attr, value)
-        user.save()
+        # apply user fields (allow blank strings)
+        if user_data:
+            for attr, value in user_data.items():
+                setattr(instance.user, attr, value)
+            instance.user.save()
 
         return instance
+

@@ -103,7 +103,7 @@ PORT = os.getenv("PORT")
 
 DATABASES = {
     'default': {
-        'ENGINE': '',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': "",                               # Replace with your PostgreSQL database name
         'USER': "",                      # Replace with your PostgreSQL username
         'PASSWORD': "",              # Replace with your PostgreSQL password
